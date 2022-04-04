@@ -50,7 +50,8 @@ class NotionClient:
     def get_user_content(self):
         return self._send_post_request("loadUserContent", {})["recordMap"]
 
-    def launch_export_task(self, space_id):
+    def launch_export_task(self, space_id, export_type):
+        assert export_type in ('html', 'markdown')
         return self._send_post_request(
             "enqueueTask",
             {
@@ -59,7 +60,7 @@ class NotionClient:
                     "request": {
                         "spaceId": space_id,
                         "exportOptions": {
-                            "exportType": "markdown",
+                            "exportType": export_type,
                             "timeZone": "Europe/Paris",
                             "locale": "en",
                         },
