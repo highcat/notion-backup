@@ -12,7 +12,7 @@ from tqdm import tqdm
 from notion_backup.configuration_service import ConfigurationService
 from notion_backup.notion_client import NotionClient
 
-STATUS_WAIT_TIME = 5
+STATUS_WAIT_TIME = 15
 block_size = 1024  # 1 Kibibyte
 
 
