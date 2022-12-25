@@ -5,6 +5,7 @@ from time import sleep
 
 import click
 import requests
+import os
 import shutil
 from prompt_toolkit import prompt
 from tqdm import tqdm
@@ -132,7 +133,17 @@ class BackupService:
                 break
             postfix_number += 1
 
-        self._download_file(export_link, export_path)
+        export_path_temp = export_path.with_name(export_path.name + ".download")
+        try:
+            self._download_file(export_link, export_path_temp)
+        except BaseException as exc:
+            try:
+                os.remove(export_path_temp)
+            except OSError:
+                pass
+            raise exc
+        else:
+            shutil.move(export_path_temp, export_path)
 
         if self.copy_dir:
             self._copy_file(export_path, Path(self.copy_dir))
