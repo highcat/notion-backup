@@ -25,7 +25,7 @@ class BackupService:
         self.noinput = noinput
         self.copy_dir = copy_dir
         if not self.output_dir_path.exists():
-            raise Exception(f'Output directory {self.output_dir_path.resolve()} does not exit')
+            raise Exception(f"Output directory {self.output_dir_path.resolve()} does not exit")
         if export_type not in ("html", "markdown"):
             raise Exception('Export type should be either "html" or "markdown"')
         if copy_dir and not Path(copy_dir).is_dir():
@@ -49,9 +49,11 @@ class BackupService:
         self.configuration_service.write_key("token", token)
         print("Congratulations, you have been successfully authenticated")
 
-    def _download_file(self, url, export_file: Path):
-        with requests.get(url, stream=True, allow_redirects=True) as response:
-            total_size = int(response.headers.get("content-length", 0))
+    def _download_file(self, url, export_file: Path, file_token):
+        with requests.get(
+            url, stream=True, allow_redirects=True, cookies={"file_token": file_token}
+        ) as response:
+            total_size = int(response.headers.get("Content-Length", 0))
             tqdm_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
             with export_file.open("wb") as export_file_handle:
                 for data in response.iter_content(block_size):
@@ -75,7 +77,7 @@ class BackupService:
         except requests.exceptions.HTTPError as err:
             if err.response.status_code == 401:
                 if self.noinput:
-                    raise Exception("Credentials expired. Please run the script manually to obtain an API token.")
+                    raise Exception("Credentials expired. Please run the script manually and login again.")
                 print("Credentials have expired, login again")
                 self._login()
 
@@ -89,12 +91,12 @@ class BackupService:
             for (space_id, space_details) in user_content["space"].items()
         ]
         print("Available spaces:")
-        for (space_id, space_name) in spaces:
+        for space_id, space_name in spaces:
             print(f"\t- {space_name}: {space_id}")
 
         if self.space_id:
             print(f"Selecting space {self.space_id}")
-            space_id=self.space_id
+            space_id = self.space_id
         else:
             if self.noinput:
                 raise Exception("Please specify space-id")
@@ -112,11 +114,9 @@ class BackupService:
 
         while True:
             task_status = self.notion_client.get_user_task_status(task_id)
-            if 'status' in task_status and task_status["status"]["type"] == "complete":
+            if "status" in task_status and task_status["status"]["type"] == "complete":
                 break
-            print(
-                f"...Export still in progress, waiting for {STATUS_WAIT_TIME} seconds"
-            )
+            print(f"...Export still in progress, waiting for {STATUS_WAIT_TIME} seconds")
             sleep(STATUS_WAIT_TIME)
         print("Export task is finished")
 
@@ -134,8 +134,10 @@ class BackupService:
             postfix_number += 1
 
         export_path_temp = export_path.with_name(export_path.name + ".download")
+
+        file_token = self.notion_client.get_file_token()
         try:
-            self._download_file(export_link, export_path_temp)
+            self._download_file(export_link, export_path_temp, file_token)
         except BaseException as exc:
             try:
                 os.remove(export_path_temp)
@@ -162,5 +164,5 @@ def main(output_dir, space_id, export_type, noinput, copy_dir):
     backup_service.backup()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
